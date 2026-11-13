@@ -1,0 +1,17 @@
+Evolution de la fonction coût.
+
+
+Fin de l'étape n°0 à date = 1.9150378704071045
+Coût moyen : 0.9991101141508936
+
+Fin de l'étape n°1 à date = 5.097919464111328
+Coût moyen : 0.999107206597178
+
+Fin de l'étape n°2 à date = 8.306593179702759
+Coût moyen : 0.9991042752399364
+
+Fin de l'étape n°3 à date = 11.562177181243896
+Coût moyen : 0.9991013197695433
+
+Fin de l'étape n°4 à date = 14.84293818473816
+Coût moyen : 0.9990983398709157

@@ -72,6 +72,11 @@ class Neurone:
         self.idCouche = couche.idCouche
         if self.idCouche>0 : 
             self.poids = np.random.uniform(-1.0, 1.0, self.reseau.couches[self.idCouche-1].nbNeurones).tolist()
+            #n_prec = self.reseau.couches[self.idCouche-1].nbNeurones
+            #limite = 1.0 / np.sqrt(n_prec)
+            #self.poids = np.random.uniform(-limite, limite, n_prec).tolist()
+
+            ### C'etait une tentative de desaturer la sigmoide mais ca ne marche pas significativement
         else :
             self.poids = [0.]
         self.biais = 0.0
