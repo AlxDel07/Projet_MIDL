@@ -71,10 +71,10 @@ class Neurone:
         self.reseau = reseau
         self.idCouche = couche.idCouche
         if self.idCouche>0 : 
-            self.poids = np.random.uniform(-1.0, 1.0, self.reseau.couches[self.idCouche-1].nbNeurones).tolist()
-            #n_prec = self.reseau.couches[self.idCouche-1].nbNeurones
-            #limite = 1.0 / np.sqrt(n_prec)
-            #self.poids = np.random.uniform(-limite, limite, n_prec).tolist()
+            #self.poids = np.random.uniform(-1.0, 1.0, self.reseau.couches[self.idCouche-1].nbNeurones).tolist()
+            n_prec = self.reseau.couches[self.idCouche-1].nbNeurones
+            limite = 1.0 / np.sqrt(n_prec)
+            self.poids = np.random.uniform(-limite, limite, n_prec).tolist()
 
             ### C'etait une tentative de desaturer la sigmoide mais ca ne marche pas significativement
         else :
@@ -200,7 +200,7 @@ class Reseau:
     """
     
 
-    def apprendre(self, ech_images, ech_labels, taux, nbEtapes) :
+    def apprendre(self, ech_images, ech_labels, taux, nbEtapes, taille_lot = 32) :
         """
         descente du gradient !!
         taux : taux d'apprentissage λ 
@@ -213,8 +213,10 @@ class Reseau:
         f.close()
         toc = time.time()
         for etape in range(nbEtapes) :
-            print("Début de l'étape n°", etape)
-            calculer_erreurs(self, ech_images, ech_labels)
+            idx = np.random.choice(len(ech_images), taille_lot, replace = False)
+            if etape%100 == 0 or etape == nbEtapes-1:
+                print("Début de l'étape n°", etape)
+            calculer_erreurs(self, ech_images[idx], ech_labels[idx])
             for n in range(1, self.nbCouches) :
                 for i in range(self.couches[n].nbNeurones) :
                     neur = self.neurone(n, i)
@@ -222,14 +224,17 @@ class Reseau:
                     
                     neur.biais -= taux[etape] * err
                     for j in range(len(neur.poids)) :
-                        neur.poids[j] -= taux[etape] * err * self.neurone(n-1, i).sortie
-            tac = time.time()
-            print("\nFin de l'étape n°", etape)
-            f = open('cout.txt', 'a')
-            f.write(f"\n\nFin de l'étape n°{etape} à date = {tac-toc}")
-            if etape%10==0 or etape<5:
-                #la fonction cout est lourde, on ne le calcule pas à chaque fois !
-                f.write(f"\nCoût moyen : {cout_moyen(self, ech_images, ech_labels)}")
+                        neur.poids[j] -= taux[etape] * self.couches[n].grad_poids[i][j]
+            if etape%100==0 or etape==nbEtapes-1 :
+                tac = time.time()
+                print("\nFin de l'étape n°", etape)
+                f = open('cout.txt', 'a')
+                f.write(f"\n\nFin de l'étape n°{etape} à date = {tac-toc}")
+                c = cout_moyen(self, ech_images[:200], ech_labels[:200])
+                f = open('cout.txt', 'a')
+                f.write(f"étape {etape} - coût moyen : {c}\n")
+                f.close()
+                print(f"étape {etape}/{nbEtapes} - coût moyen : {c:.4f}")
             f.close()
             
     def annulerErreurs(self) :
@@ -238,6 +243,8 @@ class Reseau:
         '''
         for c in self.couches :
             c.erreurs = np.zeros(c.nbNeurones)
+            if c.idCouche > 0 :
+                c.grad_poids = np.zeros((c.nbNeurones, self.couches[c.idCouche-1].nbNeurones))
     
     
     
@@ -316,23 +323,24 @@ def calculer_erreurs(reseau, ech_images, ech_labels) :
     reseau.annulerErreurs()
     for a in range(len(ech_images)) :
         prediction = reseau.predire(ech_images[a])
-        attendu = [int(ech_labels[a]==i) for i in range(10)] 
-        #1 à la bonne prediction, 0 sinon
-        for m in range(1, reseau.nbCouches) :
-            #on calcule de la sortie vers l'entrée !
-            n = reseau.nbCouches - m #numéro de couche entre 1 et nbCouches
-            erreurs = []
+        attendu = [int(ech_labels[a]==i) for i in range(10)]
+        erreurs_suiv = None                      # erreurs de la couche n+1, pour CETTE image
+        for n in range(n_sortie, 0, -1) :        # de la sortie vers la couche 1
+            erreurs = np.zeros(reseau.couches[n].nbNeurones)
             for i in range(reseau.couches[n].nbNeurones) :
-                s = sigmoide(reseau.neurone(n, i).combi)
-                if n==n_sortie :
-                    erreurs.append(2*(prediction[i] - attendu[i]) * s * (1 - s))
+                s = reseau.neurone(n, i).sortie
+                if n == n_sortie :
+                    erreurs[i] = 2*(prediction[i] - attendu[i]) * s * (1 - s)
                 else :
-                    somme = sum([reseau.neurone(n+1, j).poids[i] * reseau.couches[n+1].erreurs[j] for j in range(reseau.couches[n+1].nbNeurones)])
-                    erreurs.append(s*(1-s)*somme)
-            reseau.couches[n].erreurs += np.array(erreurs)
-    for n in range(reseau.nbCouches) :
+                    somme = sum(reseau.neurone(n+1, j).poids[i] * erreurs_suiv[j]
+                                for j in range(reseau.couches[n+1].nbNeurones))
+                    erreurs[i] = s * (1 - s) * somme
+            reseau.couches[n].erreurs += erreurs
+            reseau.couches[n].grad_poids += np.outer(erreurs, reseau.couches[n-1].valeurs_actuelles())
+            erreurs_suiv = erreurs
+    for n in range(1, reseau.nbCouches) :
         reseau.couches[n].erreurs /= len(ech_images)
-        #pour avoir la moyenne
+        reseau.couches[n].grad_poids /= len(ech_images)
 
 
 
@@ -345,8 +353,8 @@ reseau = Reseau([784, 16, 16, 10]) #modèle de la vidéo
 ech_images, ech_labels, test_images, test_labels = charger_mnist()
 TAILLE = min(1000, len(ech_labels))  #pour faire des tests rapides mettre TAILLE à 1000, pour des tests poussés mettre 60000
 print("Taille de l'échantillon :", TAILLE)
-nbEtapes = 5
-taux = [10 for _ in range(nbEtapes)]  #liste pour pouvoir faire varier le taux d'apprentissage
+nbEtapes = 2000
+taux = [3 for _ in range(nbEtapes)]  #liste pour pouvoir faire varier le taux d'apprentissage
 
 
 
@@ -355,7 +363,7 @@ tic = time.time()
 print("Coût moyen avant apprentissage :", cout_moyen(reseau, ech_images[:TAILLE], ech_labels[:TAILLE]))
 tac = time.time()
 print("Temps d'éxecution de la fonction de coût :", tac-tic)
-reseau.apprendre(ech_images[:TAILLE], ech_labels[:TAILLE], taux, nbEtapes)
+reseau.apprendre(ech_images, ech_labels, taux, nbEtapes, taille_lot = 32)
 print("Coût moyen après apprentissage :", cout_moyen(reseau, ech_images[:TAILLE], ech_labels[:TAILLE]))
 
 
@@ -377,6 +385,9 @@ for i in range(len(test_labels)) :
             print("Etiquette = ", test_labels[i])
         nb_erreur +=1
 print(f"Taux de prédictions correctes : {nb_ok*100/len(test_labels)}%")
+
+
+
 
     
     

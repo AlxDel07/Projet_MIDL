@@ -1,17 +1,64 @@
 Evolution de la fonction coût.
 
 
-Fin de l'étape n°0 à date = 1.9150378704071045
-Coût moyen : 0.9991101141508936
+Fin de l'étape n°0 à date = 0.12346363067626953étape 0 - coût moyen : 0.9180479614889149
 
-Fin de l'étape n°1 à date = 5.097919464111328
-Coût moyen : 0.999107206597178
 
-Fin de l'étape n°2 à date = 8.306593179702759
-Coût moyen : 0.9991042752399364
+Fin de l'étape n°100 à date = 11.3118896484375étape 100 - coût moyen : 0.8890393287971144
 
-Fin de l'étape n°3 à date = 11.562177181243896
-Coût moyen : 0.9991013197695433
 
-Fin de l'étape n°4 à date = 14.84293818473816
-Coût moyen : 0.9990983398709157
+Fin de l'étape n°200 à date = 22.568063497543335étape 200 - coût moyen : 0.6793838893874254
+
+
+Fin de l'étape n°300 à date = 34.02538585662842étape 300 - coût moyen : 0.5228382880269801
+
+
+Fin de l'étape n°400 à date = 45.817314863204956étape 400 - coût moyen : 0.3833987342419607
+
+
+Fin de l'étape n°500 à date = 57.11390018463135étape 500 - coût moyen : 0.30097189835895977
+
+
+Fin de l'étape n°600 à date = 68.40997266769409étape 600 - coût moyen : 0.22292755559171873
+
+
+Fin de l'étape n°700 à date = 79.63972926139832étape 700 - coût moyen : 0.2405983852928231
+
+
+Fin de l'étape n°800 à date = 90.78830647468567étape 800 - coût moyen : 0.17903162844355464
+
+
+Fin de l'étape n°900 à date = 101.90346097946167étape 900 - coût moyen : 0.19037802598593043
+
+
+Fin de l'étape n°1000 à date = 113.11757254600525étape 1000 - coût moyen : 0.1796228746617998
+
+
+Fin de l'étape n°1100 à date = 124.02124571800232étape 1100 - coût moyen : 0.1681417491775847
+
+
+Fin de l'étape n°1200 à date = 135.0171935558319étape 1200 - coût moyen : 0.15477418506323062
+
+
+Fin de l'étape n°1300 à date = 147.20378518104553étape 1300 - coût moyen : 0.14163258058515257
+
+
+Fin de l'étape n°1400 à date = 159.95636653900146étape 1400 - coût moyen : 0.13049707148941445
+
+
+Fin de l'étape n°1500 à date = 172.8320004940033étape 1500 - coût moyen : 0.14757529622098164
+
+
+Fin de l'étape n°1600 à date = 185.3859782218933étape 1600 - coût moyen : 0.15417757574324417
+
+
+Fin de l'étape n°1700 à date = 198.515634059906étape 1700 - coût moyen : 0.14356737398204364
+
+
+Fin de l'étape n°1800 à date = 209.665057182312étape 1800 - coût moyen : 0.12398227226554039
+
+
+Fin de l'étape n°1900 à date = 221.63456296920776étape 1900 - coût moyen : 0.12893962716629775
+
+
+Fin de l'étape n°1999 à date = 233.3170566558838étape 1999 - coût moyen : 0.12987711808058858
