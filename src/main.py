@@ -1,48 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Hello ce code implémente :
-    structure de données
-    fonctions auxiliaires (cout, sigmoide etc)
-    apprentissage
-    prédiction
-    initialisation
-    test
-    
-Mais il ne marche pas...
-
-
-Détails de ma compréhension du problème (je crois...) :
-    
-    La descente de gradient cherche un minimum local de la fonction de coût.
-    J'ai l'impression que le réseau à tendance à se stabiliser vers 
-    un état où toutes les valeurs de la couche de sortie sont quasi nulles
-    ... ce qui permet effectivement de faire baisser la fonction de coût
-    vers une moyenne environ égale à 1 (peut être inférieure ou supérieure)
-    (Le réseau fait ça en mettant des biais très négatifs notamment)
-    Puis l'apprentissage stagne.
-    
-    Conséquence inquiétante :
-        Pour toutes les images, les résultats sont les mêmes !!!
-        (aux arrondis de float près)
-    
-    Piste d'amélioration tombée à l'eau :
-        Commencer avec des poids et biais qui donnent [0, 0, ..., 0]
-        en sortie pour toute entrée (par ex : mettre tous les biais à -1000)
-        
-        Ainsi, la fonction de coût moyen est déjà à 1 au départ, 
-        puis la descente de gradient permettrait de descendre en dessous
-        
-        L'expérience donne que cet état semble être un minimum local
-        Donc le gradient vaut 0 et l'apprentissage ne mène nulle part
-    
-    
-PS Remarque propreté :
-    J'ai mis certaines fonctions dans la classe Reseau
-    d'autres en dehors, sans raison particulière... 
-    C'est peut-être à uniformiser
-    
-
-"""
 
 import math
 import numpy as np
@@ -70,23 +26,24 @@ class Neurone:
     def __init__(self, reseau, couche, idNeurone) :
         self.reseau = reseau
         self.idCouche = couche.idCouche
-        if self.idCouche>0 : 
-            #self.poids = np.random.uniform(-1.0, 1.0, self.reseau.couches[self.idCouche-1].nbNeurones).tolist()
+
+        if self.idCouche>0 :
             n_prec = self.reseau.couches[self.idCouche-1].nbNeurones
             limite = 1.0 / np.sqrt(n_prec)
             self.poids = np.random.uniform(-limite, limite, n_prec).tolist()
-
-            ### C'etait une tentative de desaturer la sigmoide mais ca ne marche pas significativement
         else :
             self.poids = [0.]
+
         self.biais = 0.0
         self.combi = 0.0
         self.sortie = 0.0
         self.idNeurone = idNeurone
+
     
     def changer_poids(self, params) :
         self.biais = params[-1]
         self.poids = params[:-1]
+
     
     def donner_poids(self) :
         params = self.poids + [self.biais]
@@ -107,6 +64,7 @@ class Couche:
         self.neurones = []
         for i in range(nbNeurones) :
             self.neurones.append(Neurone(self.reseau, self, i))
+
         
     def changer_poids(self, params) :
         """
@@ -126,7 +84,7 @@ class Couche:
             params += n.donner_poids()
         return params
     
-    def valeurs_actuelles(self) : #TODO: changer de nom
+    def valeurs_sorties(self) :
         """
         retourne le veteur des valeurs de sortie des neurones de la couche
         """
@@ -149,13 +107,13 @@ class Reseau:
             self.couches[0].neurones[i].sortie = image[i]
         
         for c in range(1, self.nbCouches) :
-            sorties = self.couches[c-1].valeurs_actuelles()
+            sorties = self.couches[c-1].valeurs_sorties()
             for n in range(self.couches[c].nbNeurones) :
-                neurone = self.neurone(c, n)                
+                neurone = self.neurone(c, n)
                 neurone.combi = neurone.poids @ sorties + neurone.biais
                 neurone.sortie = sigmoide(neurone.combi)
 
-        return self.couches[-1].valeurs_actuelles()
+        return self.couches[-1].valeurs_sorties()
     
 
     def __init__(self, nbNeuronesCouche) :
@@ -193,7 +151,8 @@ class Reseau:
             self.couches[i].changer_poids(params[(i-1)*(n+1)*m:i*(n+1)*m])
     
     
-    """REMARQUE :
+    """
+    REMARQUE :
         changer_poids() et donner_poids() vont de paire
         elles permettent les conversions entre Reseau et tableau (de poids et biais) -> donner_poids
         et entre tableau et Reseau -> changer_poids
@@ -202,10 +161,9 @@ class Reseau:
 
     def apprendre(self, ech_images, ech_labels, taux, nbEtapes, taille_lot = 32) :
         """
-        descente du gradient !!
+        descente du gradient
         taux : taux d'apprentissage λ 
         (c'est une liste de longueur nbEtapes) -> permet de faire varier λ
-        
         laisse une trace de l'évolution des coûts moyens et des temps de calcul dans cout.txt
         """
         f = open('cout.txt', 'w')
@@ -251,16 +209,20 @@ class Reseau:
 """ ****************************** AUXILIAIRES *************************************"""
 
 def sigmoide(x) :
+    '''
+    fonction sigmoide necessaire dans la rétropropagation
+    '''
     try :
         return 1/(1+math.exp(-x))
     except :
-        return 0  #sinon il pète un plomb quand x est trop négatif
+        return 0  #nécessaire pour éviter un résultat aberrant si x trop petit
 
 
 def cout_unique(reseau : Reseau, image, label) :
     """
     retourne l'erreur (somme des carrés des différences)
     du réseau pour UNE SEULE image
+    fonction uniquement utilisée dans la fonction cout_moyen
     """
     prediction = reseau.predire(image)  #Array
     ideal = np.array([0 for i in range(len(prediction))])
@@ -270,7 +232,7 @@ def cout_unique(reseau : Reseau, image, label) :
 
 def cout_moyen(reseau : Reseau, ech_images, ech_labels) :
     """
-    retourne l'erreur moyenne sur tout l'échatillon
+    retourne l'erreur moyenne sur tout l'échantillon passé en paramètres
     """
     couts = np.array([cout_unique(reseau, ech_images[i], ech_labels[i]) for i in range(len(ech_images))])
     return np.mean(couts)
@@ -278,7 +240,7 @@ def cout_moyen(reseau : Reseau, ech_images, ech_labels) :
 
 def charger_mnist():
     '''
-    charge les données depuis mnist
+    charge les données depuis mnist et les mets sous formes de vecteurs utilisables par le reseau de neurones
     '''
     fichier = "mnist.npz"
     if not os.path.exists(fichier):
@@ -336,7 +298,7 @@ def calculer_erreurs(reseau, ech_images, ech_labels) :
                                 for j in range(reseau.couches[n+1].nbNeurones))
                     erreurs[i] = s * (1 - s) * somme
             reseau.couches[n].erreurs += erreurs
-            reseau.couches[n].grad_poids += np.outer(erreurs, reseau.couches[n-1].valeurs_actuelles())
+            reseau.couches[n].grad_poids += np.outer(erreurs, reseau.couches[n-1].valeurs_sorties())
             erreurs_suiv = erreurs
     for n in range(1, reseau.nbCouches) :
         reseau.couches[n].erreurs /= len(ech_images)
@@ -348,43 +310,49 @@ def calculer_erreurs(reseau, ech_images, ech_labels) :
 
 """ **************************** MAIN **************************"""
 
-#MISE EN PLACE
-reseau = Reseau([784, 16, 16, 10]) #modèle de la vidéo
-ech_images, ech_labels, test_images, test_labels = charger_mnist()
-TAILLE = min(1000, len(ech_labels))  #pour faire des tests rapides mettre TAILLE à 1000, pour des tests poussés mettre 60000
-print("Taille de l'échantillon :", TAILLE)
-nbEtapes = 2000
-taux = [3 for _ in range(nbEtapes)]  #liste pour pouvoir faire varier le taux d'apprentissage
+def main(void):
+    '''
+    Fonction principale qui initialise le réseau, le fait apprendre et lance le test à l'aide des données mnist chargées
+    '''
+
+
+    #MISE EN PLACE
+    reseau = Reseau([784, 16, 16, 10]) #modèle de la vidéo
+    ech_images, ech_labels, test_images, test_labels = charger_mnist()
+    TAILLE = min(1000, len(ech_labels))  #pour faire des tests rapides mettre TAILLE à 1000, pour des tests poussés mettre 60000
+    print("Taille de l'échantillon :", TAILLE)
+    nbEtapes = 2000
+    taux = [3 for _ in range(nbEtapes)]  #liste pour pouvoir faire varier le taux d'apprentissage
 
 
 
-#APPRENTISSAGE
-tic = time.time()
-print("Coût moyen avant apprentissage :", cout_moyen(reseau, ech_images[:TAILLE], ech_labels[:TAILLE]))
-tac = time.time()
-print("Temps d'éxecution de la fonction de coût :", tac-tic)
-reseau.apprendre(ech_images, ech_labels, taux, nbEtapes, taille_lot = 32)
-print("Coût moyen après apprentissage :", cout_moyen(reseau, ech_images[:TAILLE], ech_labels[:TAILLE]))
+    #APPRENTISSAGE
+    tic = time.time()
+    print("Coût moyen avant apprentissage :", cout_moyen(reseau, ech_images[:TAILLE], ech_labels[:TAILLE]))
+    tac = time.time()
+    print("Temps d'éxecution de la fonction de coût :", tac-tic)
+    reseau.apprendre(ech_images, ech_labels, taux, nbEtapes, taille_lot = 32)
+    print("Coût moyen après apprentissage :", cout_moyen(reseau, ech_images[:TAILLE], ech_labels[:TAILLE]))
 
 
 
-#TEST
-AFFICHAGE = True  #mettre à False pour plus de lisibilité
-nb_ok = 0
-nb_erreur = 0
-for i in range(len(test_labels)) :
-    prediction = np.array(reseau.predire(test_images[i]))
-    probable = np.argmax(prediction)
-    if probable == test_labels[i]:
-        nb_ok +=1
-    elif nb_erreur < 6 :
-        if AFFICHAGE :
-            print("ERREUR")
-            imprimer_image(test_images[i])
-            print("Prédiction = ", prediction, " ->", probable)
-            print("Etiquette = ", test_labels[i])
-        nb_erreur +=1
-print(f"Taux de prédictions correctes : {nb_ok*100/len(test_labels)}%")
+    #TEST
+    AFFICHAGE = True  #mettre à False pour plus de lisibilité
+    nb_ok = 0
+    nb_erreur = 0
+    for i in range(len(test_labels)) :
+        prediction = np.array(reseau.predire(test_images[i]))
+        probable = np.argmax(prediction)
+        if probable == test_labels[i]:
+            nb_ok +=1
+        elif nb_erreur < 6 :
+            if AFFICHAGE :
+                print("ERREUR")
+                imprimer_image(test_images[i])
+                print("Prédiction = ", prediction, " ->", probable)
+                print("Etiquette = ", test_labels[i])
+            nb_erreur +=1
+    print(f"Taux de prédictions correctes : {nb_ok*100/len(test_labels)}%")
 
 
 
